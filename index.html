@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Atlas Cutter</title>
+  <title id="pageTitle">Atlas Cutter - v1.0.1</title>
 
   <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -66,6 +66,20 @@
       flex-direction: column;
       align-items: center;
       gap: 4px;
+      transition: box-shadow 0.2s ease;
+      position: relative;
+    }
+
+    .grid-item-content:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .grid-item-checkbox {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+      cursor: pointer;
     }
 
     .sprite-preview-wrap {
@@ -111,13 +125,13 @@
 <body class="bg-gray-100">
 
   <div class="max-w-6xl mx-auto py-8 px-4">
-    <h1 class="text-3xl font-bold mb-4">🧩 Atlas Cutter</h1>
+    <h1 id="pageHeading" class="text-3xl font-bold mb-4">🧩 Atlas Cutter</h1>
 
     <!-- DropZone -->
     <div id="dropZone"
       class="border-2 border-dashed border-gray-400 bg-white rounded-lg p-6 text-center cursor-pointer transition">
       <div id="dropZoneContent">
-        <p class="text-lg text-gray-700">📦 Kéo thả nhiều file <b>.atlas + .png + .json</b> hoặc click để chọn</p>
+        <p class="text-lg text-gray-700"></p>
       </div>
       <div id="filePreview" class="mt-4 hidden">
         <div id="fileList" class="text-sm text-left space-y-2"></div>
@@ -127,45 +141,41 @@
     </div>
 
     <div class="mt-4 flex gap-3">
-      <button id="btnProcess" class="px-4 py-2 bg-blue-600 text-white rounded shadow">
-        Cắt tất cả atlas
-      </button>
-      <button id="btnClear" class="px-4 py-2 bg-red-600 text-white rounded shadow">
-        🗑️ Clear
-      </button>
+      <button id="btnProcess" class="px-4 py-2 bg-blue-600 text-white rounded shadow"></button>
+      <button id="btnClear" class="px-4 py-2 bg-red-600 text-white rounded shadow"></button>
     </div>
 
     <!-- Controls -->
     <div class="mt-6 flex flex-wrap gap-3 items-center text-sm">
-      <input id="searchInput" placeholder="🔍 Tìm sprite..." class="border rounded px-3 py-1 w-56" />
+      <input id="searchInput" placeholder="" class="border rounded px-3 py-1 w-56" />
 
       <select id="sortSelect" class="border rounded px-2 py-1">
-        <option value="nameAsc">Tên A→Z</option>
-        <option value="nameDesc">Tên Z→A</option>
-        <option value="wAsc">Width ↑</option>
-        <option value="wDesc">Width ↓</option>
-        <option value="hAsc">Height ↑</option>
-        <option value="hDesc">Height ↓</option>
+        <option value="nameAsc"></option>
+        <option value="nameDesc"></option>
+        <option value="wAsc"></option>
+        <option value="wDesc"></option>
+        <option value="hAsc"></option>
+        <option value="hDesc"></option>
       </select>
 
       <label class="flex items-center gap-2">
-        <input type="checkbox" id="bboxToggle"> Bounding box
+        <input type="checkbox" id="bboxToggle"> <span id="bboxLabel"></span>
+      </label>
+
+      <label class="flex items-center gap-2">
+        <input type="checkbox" id="selectAllToggle" checked> <span id="selectAllLabel">Select All</span>
       </label>
 
       <select id="bgSelect" class="border rounded px-2 py-1">
-        <option value="checker">Checker</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="transparent">Transparent</option>
+        <option value="checker"></option>
+        <option value="light"></option>
+        <option value="dark"></option>
+        <option value="transparent"></option>
       </select>
 
-      <button id="btnMeta" class="px-3 py-1 bg-emerald-600 text-white rounded shadow">
-        📄 Export Metadata JSON
-      </button>
+      <button id="btnMeta" class="px-3 py-1 bg-emerald-600 text-white rounded shadow"></button>
 
-      <button id="btnZip" class="ml-auto px-3 py-1 bg-orange-600 text-white rounded shadow">
-        📦 Download ZIP
-      </button>
+      <button id="btnZip" class="ml-auto px-3 py-1 bg-orange-600 text-white rounded shadow"></button>
     </div>
 
     <!-- GRID + PREVIEW LAYOUT -->
@@ -174,10 +184,9 @@
       <div id="grid" class="flex-1"></div>
 
       <!-- Dynamic Zoom Preview Panel -->
-      <div id="previewPanel" class="w-full lg:w-80 bg-white rounded-lg shadow-md p-4 hidden">
-        <h2 class="text-sm font-semibold mb-2 flex items-center gap-1">
-          🔍 Dynamic Preview
-        </h2>
+      <div id="previewPanel" class="w-full lg:w-80 bg-white rounded-lg shadow-md p-4 hidden relative">
+        <button id="btnClosePreview" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl leading-none" title="Close">×</button>
+        <h2 id="previewPanelTitle" class="text-sm font-semibold mb-2 flex items-center gap-1"></h2>
         <div id="previewTitle" class="text-xs font-semibold mb-1 truncate text-gray-800"></div>
         <div id="previewDim" class="text-[11px] text-gray-500 mb-2"></div>
 
@@ -186,19 +195,15 @@
         </div>
 
         <div class="flex items-center gap-2 text-xs">
-          <span class="whitespace-nowrap">Zoom</span>
+          <span id="zoomLabel" class="whitespace-nowrap"></span>
           <input id="zoomSlider" type="range" min="0.5" max="8" step="0.5" value="2" class="flex-1">
           <span id="zoomValue" class="w-10 text-right text-[11px] text-gray-500">2×</span>
         </div>
 
         <button id="btnFullscreen"
-          class="mt-3 w-full px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-900">
-          ⛶ Xem fullscreen
-        </button>
+          class="mt-3 w-full px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-900"></button>
 
-        <p class="mt-2 text-[11px] text-gray-500">
-          💡 Tip: Click vào sprite trong grid để xem ở đây. Double-click để mở fullscreen.
-        </p>
+        <p id="previewTipText" class="mt-2 text-[11px] text-gray-500"></p>
       </div>
     </div>
   </div>
@@ -206,8 +211,145 @@
   <!-- Modal -->
   <div id="modal" class="hidden"></div>
 
+  <!-- Templates -->
+  <script type="text/template" id="template-fileList">
+    <div class="grid grid-cols-3 gap-2 text-xs">
+      <div class="bg-blue-50 p-2 rounded">
+        <div class="font-semibold">{{fileTypeAtlas}}</div>
+        <div class="text-gray-600">{{atlasCount}} {{fileCount}}</div>
+      </div>
+      <div class="bg-green-50 p-2 rounded">
+        <div class="font-semibold">{{fileTypeImage}}</div>
+        <div class="text-gray-600">{{pngCount}} {{fileCount}}</div>
+      </div>
+      <div class="bg-purple-50 p-2 rounded">
+        <div class="font-semibold">{{fileTypeJson}}</div>
+        <div class="text-gray-600">{{jsonCount}} {{fileCount}}</div>
+      </div>
+    </div>
+    <div class="mt-2 text-xs text-gray-600 max-h-32 overflow-y-auto">
+      {{fileItems}}
+    </div>
+  </script>
+
+  <script type="text/template" id="template-gridItem">
+    <div class="grid-item">
+      <div class="grid-item-content">
+        <input type="checkbox" class="grid-item-checkbox sprite-checkbox" checked>
+        <div class="text-xs font-semibold text-center truncate w-full">{{spriteName}}</div>
+        <div class="sprite-preview-wrap p-2 {{bgClass}}">
+          <canvas width="{{spriteWidth}}" height="{{spriteHeight}}"></canvas>
+        </div>
+        <div class="text-[11px] text-gray-500 flex items-center gap-1 justify-center">
+          {{spriteWidth}}×{{spriteHeight}} • 
+          <a href="#" class="text-blue-600 hover:text-blue-800 underline download-link">{{download}}</a>
+        </div>
+      </div>
+    </div>
+  </script>
+
   <script>
     const $ = id => document.getElementById(id);
+
+    // i18n translations
+    const i18n = {
+      title: "Atlas Cutter",
+      dropZoneText: "📦 Kéo thả nhiều file <b>.atlas + .png + .json</b> hoặc click để chọn",
+      dropZoneSelected: "✅ Đã chọn {count} file",
+      btnProcess: "Cắt tất cả atlas",
+      btnProcessCountdown: "Cắt tất cả atlas ({seconds}s)",
+      btnClear: "🗑️ Clear",
+      btnMeta: "📄 Export Metadata JSON",
+      btnZip: "📦 Download ZIP",
+      searchPlaceholder: "🔍 Tìm sprite...",
+      sortNameAsc: "Tên A→Z",
+      sortNameDesc: "Tên Z→A",
+      sortWAsc: "Width ↑",
+      sortWDesc: "Width ↓",
+      sortHAsc: "Height ↑",
+      sortHDesc: "Height ↓",
+      labelBbox: "Bounding box",
+      selectAll: "Select All",
+      bgChecker: "Checker",
+      bgLight: "Light",
+      bgDark: "Dark",
+      bgTransparent: "Transparent",
+      previewTitle: "🔍 Dynamic Preview",
+      previewZoom: "Zoom",
+      btnFullscreen: "⛶ Xem fullscreen",
+      previewTip: "💡 Tip: Click vào sprite trong grid để xem ở đây. Double-click để mở fullscreen.",
+      fileTypeAtlas: "Atlas (.atlas)",
+      fileTypeImage: "Image (.png)",
+      fileTypeJson: "JSON (.json)",
+      fileCount: "file",
+      download: "Download",
+      alertNoFiles: "Chưa có file!",
+      alertMissingFiles: "Không tìm thấy đủ 3 loại file (atlas + png + json) cho cùng một tên base!"
+    };
+
+    // Helper function to get i18n text with optional replacements
+    function t(key, replacements = {}) {
+      let text = i18n[key] || key;
+      Object.keys(replacements).forEach(k => {
+        text = text.replace(`{${k}}`, replacements[k]);
+      });
+      return text;
+    }
+
+    // Helper function to render template
+    function renderTemplate(templateId, data = {}) {
+      const template = document.getElementById(templateId);
+      if (!template) return null;
+      
+      let html = template.textContent || template.innerHTML;
+      
+      // Replace i18n keys with actual translations
+      Object.keys(data).forEach(key => {
+        if (key.startsWith('i18n_')) {
+          const i18nKey = key.replace('i18n_', '');
+          data[key] = t(i18nKey, data[key + '_replacements'] || {});
+        }
+      });
+      
+      // Replace placeholders
+      Object.keys(data).forEach(key => {
+        const value = data[key];
+        if (value !== undefined && value !== null) {
+          html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        }
+      });
+      
+      // Create container to parse HTML
+      const container = document.createElement('div');
+      container.innerHTML = html.trim();
+      return container.firstChild || container;
+    }
+
+    // Helper function to render template as string (for innerHTML)
+    function renderTemplateString(templateId, data = {}) {
+      const template = document.getElementById(templateId);
+      if (!template) return '';
+      
+      let html = template.textContent || template.innerHTML;
+      
+      // Replace i18n keys with actual translations
+      Object.keys(data).forEach(key => {
+        if (key.startsWith('i18n_')) {
+          const i18nKey = key.replace('i18n_', '');
+          data[key] = t(i18nKey, data[key + '_replacements'] || {});
+        }
+      });
+      
+      // Replace placeholders
+      Object.keys(data).forEach(key => {
+        const value = data[key];
+        if (value !== undefined && value !== null) {
+          html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        }
+      });
+      
+      return html;
+    }
 
     // Element references
     const $dropZone = $("dropZone");
@@ -234,6 +376,42 @@
     const $btnZip = $("btnZip");
     const $zoomSlider = $("zoomSlider");
     const $btnFullscreen = $("btnFullscreen");
+    const $btnClosePreview = $("btnClosePreview");
+    const $selectAllToggle = $("selectAllToggle");
+
+    // Initialize UI with i18n text
+    function initI18n() {
+      $("pageTitle").textContent = t("title");
+      $("pageHeading").textContent = "🧩 " + t("title");
+      
+      // Use template literal for drop zone
+      $dropZoneContent.innerHTML = `<p class="text-lg text-gray-700">${t("dropZoneText")}</p>`;
+      
+      $btnProcess.textContent = t("btnProcess");
+      $btnClear.textContent = t("btnClear");
+      $searchInput.placeholder = t("searchPlaceholder");
+      $sortSelect.options[0].textContent = t("sortNameAsc");
+      $sortSelect.options[1].textContent = t("sortNameDesc");
+      $sortSelect.options[2].textContent = t("sortWAsc");
+      $sortSelect.options[3].textContent = t("sortWDesc");
+      $sortSelect.options[4].textContent = t("sortHAsc");
+      $sortSelect.options[5].textContent = t("sortHDesc");
+      $("bboxLabel").textContent = t("labelBbox");
+      $("selectAllLabel").textContent = t("selectAll");
+      $bgSelect.options[0].textContent = t("bgChecker");
+      $bgSelect.options[1].textContent = t("bgLight");
+      $bgSelect.options[2].textContent = t("bgDark");
+      $bgSelect.options[3].textContent = t("bgTransparent");
+      $btnMeta.textContent = t("btnMeta");
+      $btnZip.textContent = t("btnZip");
+      $("previewPanelTitle").textContent = t("previewTitle");
+      $("zoomLabel").textContent = t("previewZoom");
+      $btnFullscreen.textContent = t("btnFullscreen");
+      $("previewTipText").textContent = t("previewTip");
+    }
+
+    // Initialize i18n on page load
+    initI18n();
 
     let files = [];
     let atlasList = {};
@@ -279,7 +457,7 @@
 
       // Reset UI
       $filePreview.classList.add("hidden");
-      $dropZoneContent.innerHTML = '<p class="text-lg text-gray-700">📦 Kéo thả nhiều file <b>.atlas + .png + .json</b> hoặc click để chọn</p>';
+      $dropZoneContent.innerHTML = `<p class="text-lg text-gray-700">${t("dropZoneText")}</p>`;
       $grid.innerHTML = "";
       $previewPanel.classList.add("hidden");
       $searchInput.value = "";
@@ -301,16 +479,16 @@
         clearInterval(countdownInterval);
         countdownInterval = null;
       }
-      $btnProcess.textContent = "Cắt tất cả atlas";
+      $btnProcess.textContent = t("btnProcess");
       $btnProcess.classList.remove("animate-pulse");
     }
 
     function updateCountdownButton() {
       if (countdownSeconds > 0) {
-        $btnProcess.textContent = `Cắt tất cả atlas (${countdownSeconds}s)`;
+        $btnProcess.textContent = t("btnProcessCountdown", { seconds: countdownSeconds });
         $btnProcess.classList.add("animate-pulse");
       } else {
-        $btnProcess.textContent = "Cắt tất cả atlas";
+        $btnProcess.textContent = t("btnProcess");
         $btnProcess.classList.remove("animate-pulse");
       }
     }
@@ -340,38 +518,34 @@
     function updateFilePreview() {
       if (files.length === 0) {
         $filePreview.classList.add("hidden");
-        $dropZoneContent.innerHTML = '<p class="text-lg text-gray-700">📦 Kéo thả nhiều file <b>.atlas + .png + .json</b> hoặc click để chọn</p>';
+        $dropZoneContent.innerHTML = `<p class="text-lg text-gray-700">${t("dropZoneText")}</p>`;
         stopAutoProcessCountdown();
         return;
       }
       
       $filePreview.classList.remove("hidden");
-      $dropZoneContent.innerHTML = `<p class="text-lg text-gray-700 font-semibold text-green-600">✅ Đã chọn ${files.length} file</p>`;
+      $dropZoneContent.innerHTML = `<p class="text-lg text-gray-700 font-semibold text-green-600">${t("dropZoneSelected", { count: files.length })}</p>`;
       
       // Group files
       const atlasFiles = files.filter(f => /\.atlas$/i.test(f.name));
       const pngFiles = files.filter(f => /\.png$/i.test(f.name));
       const jsonFiles = files.filter(f => /\.json$/i.test(f.name));
       
-      $fileList.innerHTML = `
-        <div class="grid grid-cols-3 gap-2 text-xs">
-          <div class="bg-blue-50 p-2 rounded">
-            <div class="font-semibold">Atlas (.atlas)</div>
-            <div class="text-gray-600">${atlasFiles.length} file</div>
-          </div>
-          <div class="bg-green-50 p-2 rounded">
-            <div class="font-semibold">Image (.png)</div>
-            <div class="text-gray-600">${pngFiles.length} file</div>
-          </div>
-          <div class="bg-purple-50 p-2 rounded">
-            <div class="font-semibold">JSON (.json)</div>
-            <div class="text-gray-600">${jsonFiles.length} file</div>
-          </div>
-        </div>
-        <div class="mt-2 text-xs text-gray-600 max-h-32 overflow-y-auto">
-          ${files.map(f => `<div class="truncate">• ${f.name}</div>`).join('')}
-        </div>
-      `;
+      // Render file items using template literal
+      const fileItemsHtml = files.map(f => 
+        `<div class="truncate">• ${f.name}</div>`
+      ).join('');
+      
+      $fileList.innerHTML = renderTemplateString("template-fileList", {
+        fileTypeAtlas: t("fileTypeAtlas"),
+        fileTypeImage: t("fileTypeImage"),
+        fileTypeJson: t("fileTypeJson"),
+        fileCount: t("fileCount"),
+        atlasCount: atlasFiles.length,
+        pngCount: pngFiles.length,
+        jsonCount: jsonFiles.length,
+        fileItems: fileItemsHtml
+      });
       
       // Preview PNG images
       $imagePreview.innerHTML = "";
@@ -430,28 +604,28 @@
 
     /* ------------------- PIXI PARSE ATLAS ------------------- */
     async function parseAtlasWithPIXI(atlasFile, pngFile, atlasName) {
-      // đọc nội dung .atlas (metadata)
+      // Read .atlas file content (metadata)
       const atlasText = await atlasFile.text();
 
-      // parse metadata thủ công (xy, size, rotate)
+      // Parse metadata manually (xy, size, rotate)
       const regions = manualParseAtlas(atlasText, atlasName);
 
-      // tạo base texture từ blob PNG
+      // Create base texture from PNG blob
       const pngURL = URL.createObjectURL(pngFile);
       const baseTexture = new PIXI.BaseTexture(pngURL);
 
-      // duyệt từng region và tạo sprite canvas
+      // Iterate through each region and create sprite canvas
       return await Promise.all(
         regions.map(async region => {
           const { name, xy, size, rotate } = region;
 
-          // tạo sub-frame giống texture atlas thực tế
+          // Create sub-frame similar to actual texture atlas
           const frame = new PIXI.Rectangle(xy.x, xy.y, size.w, size.h);
 
-          // tạo texture con (không dùng trực tiếp, chỉ để tham chiếu logic)
+          // Create sub-texture (not used directly, only for logic reference)
           const subTex = new PIXI.Texture(baseTexture, frame);
 
-          // xuất canvas
+          // Export canvas
           const c = document.createElement("canvas");
           c.width = rotate ? size.h : size.w;
           c.height = rotate ? size.w : size.h;
@@ -463,15 +637,15 @@
           await new Promise(res => img.onload = res);
 
           if (rotate) {
-            // rotate 90 degrees clockwise
+            // Unrotate: sprite in PNG is rotated 90° clockwise, so we rotate -90° (counter-clockwise) to restore
             ctx.save();
             ctx.translate(c.width / 2, c.height / 2);
-            ctx.rotate(Math.PI / 2);
+            ctx.rotate(-Math.PI / 2);
             ctx.drawImage(
               img,
               xy.x, xy.y, size.w, size.h,
-              -size.w / 2, -size.h / 2,
-              size.w, size.h
+              -size.h / 2, -size.w / 2,
+              size.h, size.w
             );
             ctx.restore();
           } else {
@@ -502,14 +676,56 @@
       const lines = text.split(/\r?\n/);
       let regions = [];
       let cur = null;
+      let imageFileName = null;
+      let imageFileNameWithoutExt = null;
+      let foundImageFile = false;
 
-      const isStart = raw =>
-        raw.trim() && !raw.startsWith(" ") && !raw.includes(":");
+      // Check if line is image file name (has image extension)
+      const isImageFileName = (raw) => {
+        const trimmed = raw.trim();
+        if (!trimmed || raw.startsWith(" ") || trimmed.includes(":")) {
+          return false;
+        }
+        const imageExtRegex = /\.(png|jpg|jpeg)$/i;
+        return imageExtRegex.test(trimmed);
+      };
 
-      lines.forEach(raw => {
+      // Check if line is sprite name (not image file, not starting with space, no colon)
+      const isSpriteName = (raw) => {
+        const trimmed = raw.trim();
+        if (!trimmed || raw.startsWith(" ") || trimmed.includes(":")) {
+          return false;
+        }
+        // Exclude if it's an image file name
+        return !isImageFileName(trimmed);
+      };
+
+      // Get base name without extension
+      const getBaseName = (filename) => {
+        return filename.replace(/\.(png|jpg|jpeg)$/i, "");
+      };
+
+      lines.forEach((raw) => {
         const line = raw.trim();
 
-        if (isStart(raw)) {
+        // Find image file name (first non-empty line that matches criteria)
+        if (!foundImageFile && isImageFileName(raw)) {
+          imageFileName = line;
+          imageFileNameWithoutExt = getBaseName(line);
+          foundImageFile = true;
+          return;
+        }
+
+        // Parse sprite names
+        if (isSpriteName(raw)) {
+          // Skip if sprite name matches image file name (with or without extension)
+          if (imageFileName && (
+            line === imageFileName || 
+            line === imageFileNameWithoutExt
+          )) {
+            return;
+          }
+
           cur && regions.push(cur);
           cur = {
             atlas: atlasName,
@@ -545,25 +761,34 @@
       const bgClass = getBgClass(bgMode);
 
       sprites.forEach(s => {
-        // Grid item
-        const item = document.createElement("div");
-        item.className = "grid-item";
-        const content = document.createElement("div");
-        content.className = "grid-item-content";
+        // Render template
+        const item = renderTemplate("template-gridItem", {
+          spriteName: s.name,
+          spriteWidth: s.w,
+          spriteHeight: s.h,
+          bgClass: bgClass,
+          download: t("download")
+        });
 
-        // Label
-        const label = document.createElement("div");
-        label.className = "text-xs font-semibold text-center truncate w-full";
-        label.textContent = s.name;
+        // Get elements from template
+        const preview = item.querySelector("canvas");
+        const downloadLink = item.querySelector(".download-link");
+        const checkbox = item.querySelector(".sprite-checkbox");
 
-        // Preview container
-        const prevWrap = document.createElement("div");
-        prevWrap.className = `sprite-preview-wrap p-2 ${bgClass}`;
+        // Store sprite name in checkbox data attribute for easy lookup
+        checkbox.dataset.spriteName = s.name;
 
-        // Canvas preview
-        const preview = document.createElement("canvas");
-        preview.width = s.w;
-        preview.height = s.h;
+        // Setup checkbox event listener
+        checkbox.onchange = () => {
+          updateSelectAllCheckbox();
+        };
+
+        // Prevent checkbox click from triggering grid item click
+        checkbox.onclick = (e) => {
+          e.stopPropagation();
+        };
+
+        // Setup canvas
         const ctx = preview.getContext("2d");
         ctx.drawImage(s.canvas, 0, 0);
 
@@ -588,16 +813,7 @@
         // Double-click = fullscreen modal
         preview.ondblclick = () => showModal(s.canvas);
 
-        prevWrap.appendChild(preview);
-
-        const dim = document.createElement("div");
-        dim.className = "text-[11px] text-gray-500 flex items-center gap-1 justify-center";
-        dim.innerHTML = `${s.w}×${s.h} • `;
-        
-        const downloadLink = document.createElement("a");
-        downloadLink.href = "#";
-        downloadLink.className = "text-blue-600 hover:text-blue-800 underline";
-        downloadLink.textContent = "Download";
+        // Setup download link
         downloadLink.onclick = (e) => {
           e.preventDefault();
           s.canvas.toBlob(blob => {
@@ -609,14 +825,14 @@
             URL.revokeObjectURL(url);
           });
         };
-        dim.appendChild(downloadLink);
 
-        content.append(label, prevWrap, dim);
-        item.appendChild(content);
         $grid.appendChild(item);
       });
 
-      // Repaint preview if sprite đang được chọn
+      // Update select all checkbox state
+      updateSelectAllCheckbox();
+
+      // Repaint preview if sprite is currently selected
       updatePreviewCanvas();
     }
 
@@ -636,9 +852,9 @@
     /* ------------------- Modal ------------------- */
     function showModal(canvas) {
       $modal.innerHTML = `
-      <div class="modal-bg" onclick="closeModal()">
-        <img src="${canvas.toDataURL()}" class="max-w-[90vw] max-h-[90vh] bg-white shadow-lg border" />
-      </div>`;
+        <div class="modal-bg" onclick="closeModal()">
+          <img src="${canvas.toDataURL()}" class="max-w-[90vw] max-h-[90vh] bg-white shadow-lg border" />
+        </div>`;
       $modal.classList.remove("hidden");
     }
     function closeModal() {
@@ -646,6 +862,11 @@
     }
 
     /* ------------------- Dynamic Preview Panel ------------------- */
+    function closePreviewPanel() {
+      $previewPanel.classList.add("hidden");
+      currentPreview = null;
+    }
+
     function setPreviewSprite(s) {
       currentPreview = s;
       if ($previewPanel.classList.contains("hidden")) {
@@ -653,10 +874,12 @@
       }
       $previewTitle.textContent = s.name;
       $previewDim.innerHTML = `${s.w}×${s.h} • `;
+      
+      // Use template literal for download link
       const downloadLink = document.createElement("a");
       downloadLink.href = "#";
       downloadLink.className = "text-blue-600 hover:text-blue-800 underline";
-      downloadLink.textContent = "Download";
+      downloadLink.textContent = t("download");
       downloadLink.onclick = (e) => {
         e.preventDefault();
         s.canvas.toBlob(blob => {
@@ -670,6 +893,12 @@
       };
       $previewDim.appendChild(downloadLink);
       updatePreviewCanvas();
+    }
+
+    /* ------------------- Select/Deselect All ------------------- */
+    function toggleSelectAll(checked) {
+      const checkboxes = $grid.querySelectorAll(".sprite-checkbox");
+      checkboxes.forEach(cb => cb.checked = checked);
     }
 
     function updatePreviewCanvas() {
@@ -702,11 +931,23 @@
 
     /* ------------------- ZIP ALL ------------------- */
     function zipAll(sprites) {
+      // Get selected sprites from checkboxes
+      const checkboxes = $grid.querySelectorAll(".sprite-checkbox:checked");
+      const selectedNames = new Set(Array.from(checkboxes).map(cb => cb.dataset.spriteName).filter(Boolean));
+
+      // Filter sprites by selected checkboxes
+      const selectedSprites = sprites.filter(s => selectedNames.has(s.name));
+
+      if (selectedSprites.length === 0) {
+        alert("No sprites selected!");
+        return;
+      }
+
       const zip = new JSZip();
       const folder = zip.folder("images");
 
       Promise.all(
-        sprites.map(s => new Promise(res =>
+        selectedSprites.map(s => new Promise(res =>
           s.canvas.toBlob(blob => {
             folder.file(`${s.name}.png`, blob);
             res();
@@ -755,11 +996,11 @@
       // Stop auto-process countdown if user clicks manually
       stopAutoProcessCountdown();
 
-      if (!files.length) { alert("Chưa có file!"); return; }
+      if (!files.length) { alert(t("alertNoFiles")); return; }
 
       const bases = groupAtlasPngJson(files);
       if (!bases.length) {
-        alert("Không tìm thấy đủ 3 loại file (atlas + png + json) cho cùng một tên base!");
+        alert(t("alertMissingFiles"));
         return;
       }
 
@@ -812,6 +1053,24 @@
 
     /* ZIP */
     $btnZip.onclick = () => zipAll(allSprites);
+
+    /* Close preview panel */
+    $btnClosePreview.onclick = () => closePreviewPanel();
+
+    /* Select/Deselect All */
+    $selectAllToggle.onchange = (e) => {
+      toggleSelectAll(e.target.checked);
+    };
+
+    /* Update select all checkbox when individual checkboxes change */
+    function updateSelectAllCheckbox() {
+      const checkboxes = $grid.querySelectorAll(".sprite-checkbox");
+      const checkedCount = $grid.querySelectorAll(".sprite-checkbox:checked").length;
+      if (checkboxes.length > 0) {
+        $selectAllToggle.checked = checkedCount === checkboxes.length;
+        $selectAllToggle.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+      }
+    }
 
     /* Zoom slider for dynamic preview */
     $zoomSlider.oninput = e => {
