@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title id="pageTitle">Atlas Cutter - v1.0.2</title>
+  <title id="pageTitle">Atlas Cutter - v1.0.3</title>
 
   <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -1054,10 +1054,16 @@
       if (worker && typeof OffscreenCanvas !== 'undefined') {
         // Convert canvas to ArrayBuffer
         Promise.all(selectedSprites.map(s => 
-          s.canvas.toBlob().then(blob => blob.arrayBuffer()).then(data => ({
-            name: s.name,
-            data: data
-          }))
+          new Promise(resolve => {
+            s.canvas.toBlob(blob => {
+              blob.arrayBuffer().then(data => {
+                resolve({
+                  name: s.name,
+                  data: data
+                });
+              });
+            });
+          })
         )).then(spritesData => {
           return new Promise((resolve, reject) => {
             const requestId = ++workerRequestId;
